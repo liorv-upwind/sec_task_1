@@ -19,3 +19,8 @@ dist/
 
 # Logs
 *.log
+
+# Generated extraction output
+/tmp/ec2-file-test-output.txt
+ec2-file-test-output.txt
+*.extracted.txt
