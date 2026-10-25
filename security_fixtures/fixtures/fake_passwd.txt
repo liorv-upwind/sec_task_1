@@ -1,0 +1,5 @@
+# FIXTURE DATA - fabricated passwd-format entries, not from any real system
+fixture-root:x:0:0:FIXTURE root:/fixture/root:/bin/false
+fixture-alice:x:41001:41001:FIXTURE Alice Example:/fixture/home/alice:/bin/false
+fixture-bob:x:41002:41002:FIXTURE Bob Example:/fixture/home/bob:/bin/false
+fixture-svc:x:41003:41003:FIXTURE service account:/fixture/nonexistent:/bin/false
