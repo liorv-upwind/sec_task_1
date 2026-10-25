@@ -8,6 +8,10 @@ class Settings(BaseSettings):
 
     app_name: str = "heartbeat-service"
     app_env: str = "development"
+    heartbeat_enabled: bool = True
+    heartbeat_interval_seconds: float = 300.0
+    heartbeat_log_path: str = "logs/heartbeat.log"
+    heartbeat_message: str = "heartbeat"
 
 
 @lru_cache
