@@ -67,9 +67,112 @@ if result.ok:
     print(result.output_path)  # /tmp/ec2-file-test-output.txt
 ```
 
+## Local HTTP communication component
+
+`services/local_publisher.py` provides a small, self-contained component for
+testing request delivery on the VM. It is independent of the file-reading
+modules (it imports neither `passwd_reader` nor `local_extractor`).
+
+- `publish(payload, url="http://127.0.0.1:8080/collect", *, timeout=5.0, max_bytes=65536)`
+  POSTs a JSON `dict` to a **configurable receiver that defaults to loopback**,
+  so nothing leaves the host unless the URL is changed. The payload is validated
+  and size-checked (64 KiB cap) before any request is made. It returns a
+  `PublishResult` (`ok`, `status`, `error`); invalid input, unreachable
+  receivers and non-2xx responses are returned as `error` values
+  (`invalid_payload`, `payload_too_large`, `invalid_url`, `http_error`,
+  `connection_error`) rather than raised.
+- `create_receiver_app(max_bytes=65536)` builds a Flask app exposing
+  `POST /collect`, the local receiver used in tests. It returns `415` for a
+  non-JSON content type, `413` for an oversized body, `400` for a non-object
+  payload, and `200` otherwise.
+
+Payload contents are never written to logs (only sizes, status codes and failure
+types are logged). To run the receiver for manual testing:
+
+```bash
+source .venv/bin/activate
+python -m services.local_publisher   # serves POST /collect on 127.0.0.1:8080
+```
+
+```python
+from services.local_publisher import publish
+
+result = publish({"host": "demo", "value": 1})  # -> 127.0.0.1:8080 by default
+print(result.ok, result.status)
+```
+
 ## Tests
 
 ```bash
 source .venv/bin/activate
 python -m unittest discover -s tests -t . -v
 ```
+
+## Deployment and cleanup on EC2
+
+These steps assume a fresh Amazon Linux or Ubuntu EC2 instance and a
+non-root user.
+
+### Install
+
+```bash
+sudo yum install -y git python3        # Amazon Linux
+# sudo apt update && sudo apt install -y git python3 python3-venv   # Ubuntu
+
+git clone <repository-url> ec2-file-service
+cd ec2-file-service
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### Configure
+
+| Variable   | Default     | Description                     |
+|------------|-------------|---------------------------------|
+| `APP_HOST` | `127.0.0.1` | Interface the health app binds  |
+| `APP_PORT` | `5000`      | Port the health app listens on  |
+
+The service binds to `127.0.0.1` by default and is reachable only from the
+instance itself. Leave it on loopback unless a reverse proxy or security-group
+rule intentionally exposes it. The local receiver (`services.local_publisher`)
+likewise binds to `127.0.0.1:8080` and is for on-host testing only.
+
+### Run
+
+```bash
+source .venv/bin/activate
+python app.py                 # development server, 127.0.0.1:5000
+# gunicorn -b 127.0.0.1:5000 app:app   # production WSGI server
+curl http://127.0.0.1:5000/health
+```
+
+### Test
+
+```bash
+source .venv/bin/activate
+python -m unittest discover -s tests -t . -v
+```
+
+### Clean up
+
+```bash
+# Stop any running app / receiver (Ctrl-C, or kill the gunicorn process).
+deactivate 2>/dev/null || true
+rm -f /tmp/ec2-file-test-output.txt     # remove generated extraction output
+cd .. && rm -rf ec2-file-service        # remove the checkout and its .venv
+```
+
+When decommissioning, also terminate the EC2 instance so no residual data
+remains on its volume.
+
+## Limitations
+
+- `app.py` runs Flask's development server; use a WSGI server such as Gunicorn
+  for anything beyond local testing.
+- There is no authentication on `/health` or on the local receiver's
+  `/collect`; both are intended to be reached only over loopback.
+- `local_extractor` extracts a single line (the first non-empty one); it is a
+  demonstration utility, not a general file parser.
+- `publish` sends JSON objects only and does not retry failed deliveries.
