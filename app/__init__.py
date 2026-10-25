@@ -1,1 +1,0 @@
-"""Heartbeat service application package."""

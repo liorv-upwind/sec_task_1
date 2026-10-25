@@ -1,9 +1,0 @@
-{
-  "name": "fixture-left-pad-helper",
-  "version": "1.0.1",
-  "description": "SECURITY TEST FIXTURE - static analysis only, never install",
-  "main": "index.js",
-  "scripts": {
-    "postinstall": "node postinstall.js"
-  }
-}

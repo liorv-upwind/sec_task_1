@@ -1,70 +1,47 @@
-# heartbeat-service
+# Flask Health Service
 
-A small FastAPI service. It's the target repository for testing a Claude-based
-pull-request security reviewer: the application is ordinary on purpose, so that
-security-relevant changes in a PR stand out.
+A minimal Flask service intended to run on an EC2 Linux VM. It currently exposes a single health endpoint.
 
-## Layout
+## Requirements
 
-```
-app/
-  main.py          FastAPI app factory + lifespan that runs the heartbeat
-  config.py        Settings (env vars / .env)
-  heartbeat.py     Background task: appends a timestamped line to logs/heartbeat.log
-  api/routes.py    GET /health, GET /info
-tests/             Unit tests for the API and the heartbeat
-.github/workflows/ PR checks: tests, dependency audit, static analysis
-docs/              Reviewer integration guide (and threat model, see below)
-```
+- Python 3.9 or newer
+- `python3-venv` (on Debian/Ubuntu: `sudo apt install python3-venv`; Amazon Linux ships `venv` with `python3`)
 
 ## Setup
-
-Requires Python 3.11+.
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements-dev.txt
-cp .env.example .env        # optional
+pip install --upgrade pip
+pip install -r requirements.txt
 ```
 
-## Run
+## Running
 
 ```bash
-uvicorn app.main:app --reload
-curl localhost:8000/health   # {"status":"ok"}
-tail -f logs/heartbeat.log
+source .venv/bin/activate
+python app.py
 ```
 
-The heartbeat writes one line on startup and then one every
-`HEARTBEAT_INTERVAL_SECONDS` (default `300`, i.e. five minutes):
+The service binds to `127.0.0.1:5000` by default, so it is reachable only from the VM itself. To change this, set these environment variables:
 
-```
-2026-10-25T10:00:00.123456+00:00 heartbeat
-```
+| Variable   | Default     | Description        |
+|------------|-------------|--------------------|
+| `APP_HOST` | `127.0.0.1` | Interface to bind  |
+| `APP_PORT` | `5000`      | Port to listen on  |
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `APP_NAME` | `heartbeat-service` | Returned by `/info` |
-| `APP_ENV` | `development` | Returned by `/info` |
-| `HEARTBEAT_ENABLED` | `true` | Turn the background task off |
-| `HEARTBEAT_INTERVAL_SECONDS` | `300` | Seconds between heartbeats |
-| `HEARTBEAT_LOG_PATH` | `logs/heartbeat.log` | Output file (parent dirs created) |
+`python app.py` uses Flask's development server. For production, run the app behind a WSGI server such as Gunicorn (`gunicorn -b 127.0.0.1:5000 app:app`), with a reverse proxy in front of it if it needs to be reachable externally.
 
-## Test and check locally
+## Endpoints
+
+### `GET /health`
+
+Returns the service status.
 
 ```bash
-pytest                       # unit tests
-pip-audit -r requirements.txt
-bandit -r app -ll
+curl http://127.0.0.1:5000/health
 ```
 
-## CI
-
-`.github/workflows/pr-checks.yml` runs on every pull request:
-
-- **tests**: `pytest`
-- **dependency-audit**: `pip-audit` against `requirements.txt`
-- **static-analysis**: `bandit` on `app/` (this check gates the PR)
-
-See [docs/CLAUDE_PR_REVIEWER.md](docs/CLAUDE_PR_REVIEWER.md) to add the Claude reviewer.
+```json
+{"status": "ok"}
+```
