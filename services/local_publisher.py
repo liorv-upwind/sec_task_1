@@ -164,6 +164,18 @@ def create_receiver_app(max_bytes: int = MAX_PAYLOAD_BYTES) -> Flask:
     return app
 
 
+def main() -> None:
+    """Console entry point: run the local receiver on loopback for testing.
+
+    Binds to 127.0.0.1:8080; override with RECEIVER_HOST / RECEIVER_PORT.
+    """
+    import os
+
+    host = os.environ.get("RECEIVER_HOST", "127.0.0.1")
+    port = int(os.environ.get("RECEIVER_PORT", "8080"))
+    create_receiver_app().run(host=host, port=port)
+
+
 if __name__ == "__main__":
     # Run the local receiver for manual testing: python -m services.local_publisher
-    create_receiver_app().run(host="127.0.0.1", port=8080)
+    main()

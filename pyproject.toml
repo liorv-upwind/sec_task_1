@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sec-task-1"
+version = "0.1.0"
+description = "Flask health service and local detection-test fixtures for an EC2 VM"
+readme = "README.md"
+requires-python = ">=3.9"
+license = "LicenseRef-Proprietary"
+dependencies = [
+    "Flask>=3.0,<4.0",
+]
+
+[project.scripts]
+# Health service (loopback by default; override APP_HOST / APP_PORT).
+ec2-health = "app:main"
+# Local test receiver for POST /collect (loopback by default; override RECEIVER_HOST / RECEIVER_PORT).
+ec2-receiver = "services.local_publisher:main"
+
+[tool.setuptools]
+# app.py is a top-level module; services is a package. Tests are not shipped.
+py-modules = ["app"]
+packages = ["services"]

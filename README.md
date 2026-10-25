@@ -101,6 +101,24 @@ result = publish({"host": "demo", "value": 1})  # -> 127.0.0.1:8080 by default
 print(result.ok, result.status)
 ```
 
+## Packaging (pip wheel)
+
+The project is pip-installable. Build a wheel locally:
+
+```bash
+source .venv/bin/activate
+pip install build
+python -m build            # writes dist/sec_task_1-0.1.0-{py3-none-any.whl,tar.gz}
+```
+
+Installing the wheel provides two console commands (both bind to loopback by
+default):
+
+| Command        | What it runs                              | Override                     |
+|----------------|-------------------------------------------|------------------------------|
+| `ec2-health`   | Health service (`GET /health`), port 5000 | `APP_HOST`, `APP_PORT`       |
+| `ec2-receiver` | Local test receiver (`POST /collect`), port 8080 | `RECEIVER_HOST`, `RECEIVER_PORT` |
+
 ## Tests
 
 ```bash
@@ -125,6 +143,17 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
+```
+
+Alternatively, copy the built wheel to the instance and install it into a venv —
+this pulls in Flask and installs the `ec2-health` / `ec2-receiver` commands:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install ./sec_task_1-0.1.0-py3-none-any.whl
+ec2-health      # serves GET /health on 127.0.0.1:5000
 ```
 
 ### Configure
