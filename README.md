@@ -45,3 +45,14 @@ curl http://127.0.0.1:5000/health
 ```json
 {"status": "ok"}
 ```
+
+## System passwd reader
+
+`services/passwd_reader.py` provides `read_passwd(path="/etc/passwd")`, which reads the file with the process's normal permissions and returns a `PasswdReadResult` (`ok`, `content`, `error`). Missing files, permission errors, directories, empty files and other read errors are returned as `error` values (`not_found`, `permission_denied`, `not_a_file`, `empty`, `read_error`) rather than raised. Log messages include only the path and the failure type, never the file contents. The reader is not exposed through any HTTP endpoint.
+
+## Tests
+
+```bash
+source .venv/bin/activate
+python -m unittest discover -s tests -t . -v
+```
